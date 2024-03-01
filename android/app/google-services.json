@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "609296103465",
+    "project_id": "app2-ce32b",
+    "storage_bucket": "app2-ce32b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:609296103465:android:f5fbda8725b4968db58438",
+        "android_client_info": {
+          "package_name": "com.example.app2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz3Xb15E3BDjrBIFb1V7wDXccGiwmT3ww"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
