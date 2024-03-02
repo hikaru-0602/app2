@@ -53,10 +53,36 @@ class _MyHomePageState extends State<MyHomePage> {
             child: ListView.builder(
               itemCount: itemList.length,
               itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text('商品名: ${itemList[index]["item"]}'),
-                  subtitle: Text('個数: ${itemList[index]["quantity"]}'),
-                );
+                return Card(
+                    child: ListTile(
+                        leading: Text(
+                          '${itemList[index]["item"]}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 20),
+                        ),
+                        //title: Text('商品名: ${itemList[index]["item"]}'),
+                        title: Text(
+                          '${itemList[index]["quantity"]}個',
+                          textAlign: TextAlign.right,
+                        ),
+                        trailing: Column(
+                          children: [
+                            IconButton(
+                              onPressed: () {},
+                              icon: const Icon(
+                                Icons.expand_less,
+                                size: 16,
+                              ),
+                              iconSize: 20,
+                            ),
+                            IconButton(
+                                onPressed: () {},
+                                icon: const Icon(
+                                  Icons.expand_more,
+                                  size: 16,
+                                ))
+                          ],
+                        )));
               },
             ),
           ),
