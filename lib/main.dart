@@ -1,21 +1,30 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _MyHomePageState createState() => _MyHomePageState();
 }
 
@@ -35,13 +44,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('在庫管理システム'),
-        actions: [
-          IconButton(
-              onPressed: () {
-                resetData();
-              },
-              icon: const Icon(Icons.abc))
-        ],
       ),
       body: Column(
         children: [
@@ -54,35 +56,55 @@ class _MyHomePageState extends State<MyHomePage> {
               itemCount: itemList.length,
               itemBuilder: (context, index) {
                 return Card(
-                    child: ListTile(
-                        leading: Text(
-                          '${itemList[index]["item"]}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 20),
-                        ),
-                        //title: Text('商品名: ${itemList[index]["item"]}'),
-                        title: Text(
-                          '${itemList[index]["quantity"]}個',
-                          textAlign: TextAlign.right,
-                        ),
-                        trailing: Column(
+                  child: Slidable(
+                      key: GlobalKey(),
+                      startActionPane: ActionPane(
+                          motion: const StretchMotion(),
+                          extentRatio: 0.25,
                           children: [
-                            IconButton(
-                              onPressed: () {},
-                              icon: const Icon(
-                                Icons.expand_less,
-                                size: 16,
-                              ),
-                              iconSize: 20,
-                            ),
-                            IconButton(
-                                onPressed: () {},
+                            SlidableAction(
+                              label: '削除',
+                              backgroundColor: Colors.red,
+                              onPressed: (context) {
+                                removeData(itemList[index]["item"]);
+                              },
+                            )
+                          ]),
+                      child: ListTile(
+                          leading: Text(
+                            '${itemList[index]["item"]}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 20),
+                          ),
+                          title: Text(
+                            '残り:${itemList[index]["quantity"].toString().padLeft(2, '0')}',
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 20),
+                          ),
+                          tileColor: ColorCheck(index)
+                              ? const Color.fromARGB(255, 222, 120, 113)
+                              : Colors.white24,
+                          trailing: Wrap(
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  updateQuantity(index, 1);
+                                },
                                 icon: const Icon(
-                                  Icons.expand_more,
-                                  size: 16,
-                                ))
-                          ],
-                        )));
+                                  Icons.add,
+                                ),
+                              ),
+                              IconButton(
+                                  onPressed: () {
+                                    updateQuantity(index, -1);
+                                  },
+                                  icon: const Icon(
+                                    Icons.remove,
+                                  ))
+                            ],
+                          ))),
+                );
               },
             ),
           ),
@@ -92,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
         onPressed: () {
           _showAddDialog();
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -102,19 +124,28 @@ class _MyHomePageState extends State<MyHomePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('商品を追加'),
-          content: Column(
-            children: [
-              TextField(
-                controller: _itemController,
-                decoration: InputDecoration(labelText: '商品名'),
-              ),
-              TextField(
-                controller: _quantityController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: '個数'),
-              ),
-            ],
+          title: const Text('商品を追加'),
+          content: SizedBox(
+            height: 150,
+            child: Column(
+              children: [
+                TextField(
+                  controller: _itemController,
+                  decoration: const InputDecoration(labelText: '商品名 8字以内'),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(8),
+                  ],
+                ),
+                TextField(
+                  controller: _quantityController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: '個数'),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(2),
+                  ],
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -123,14 +154,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 _itemController.clear();
                 _quantityController.clear();
               },
-              child: Text('キャンセル'),
+              child: const Text('キャンセル'),
             ),
             TextButton(
               onPressed: () {
                 saveData();
                 Navigator.pop(context);
               },
-              child: Text('保存'),
+              child: const Text('保存'),
             ),
           ],
         );
@@ -183,5 +214,45 @@ class _MyHomePageState extends State<MyHomePage> {
       saveData();
       loadData();
     });
+  }
+
+  Future<void> removeData(String item) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(item);
+    setState(() {
+      saveData();
+      loadData();
+    });
+  }
+
+  void updateQuantity(int index, int delta) {
+    setState(() {
+      // 現在の数量
+      int currentQuantity = itemList[index]["quantity"];
+
+      // 新しい数量
+      int newQuantity = currentQuantity + delta;
+
+      // 数量が0未満にならないように調整
+      newQuantity = newQuantity < 0 ? 0 : newQuantity;
+
+      // 更新した数量を保存
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString(itemList[index]["item"], newQuantity.toString());
+      });
+
+      // リストを更新
+      loadData();
+    });
+  }
+
+  // ignore: non_constant_identifier_names
+  bool ColorCheck(int index) {
+    int currentQuantity = itemList[index]["quantity"];
+    if (currentQuantity == 0) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }
